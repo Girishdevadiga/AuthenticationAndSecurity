@@ -3,13 +3,13 @@ require("dotenv").config();//1.require it
 const express = require("express");
 const ejs = require("ejs");
 const bodyParser = require("body-parser");
-const exp = require("constants");
 const mongoose = require("mongoose");
 const { log } = require("console");
 const app = express();
 
+//1.Require MD5
+const md5 = require("md5");
 
-const encrypt = require("mongoose-encryption");
 
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(express.static("public"));
@@ -19,16 +19,11 @@ mongoose.connect("mongodb://localhost:27017/userDB",{useNewUrlParser:true});
 
 
 const userSchema =new  mongoose.Schema({
-
     username:String,
     password:String
 });
-//console.log(process.env.SECRET);
-
-userSchema.plugin(encrypt,{secret:process.env.SECRET,encryptedFields:["password"]}); //Only encrypting password field
 
 const User = new mongoose.model("User",userSchema);
-
 
 
 app.get("/",(req,res)=>{
@@ -47,11 +42,11 @@ app.get("/register",(req,res)=>{
 app.post("/register",(req,res)=>{
 
     let name = req.body.username;
-    let pass = req.body.password;
+    let pass = md5(req.body.password); //2.Hash the password using md5
     
     const user = new User({
         username:name,
-        password:pass
+        password:pass    //3.Store it in db
     });
     user.save((err)=>{
         if(err){
@@ -66,7 +61,7 @@ app.post("/register",(req,res)=>{
 
 app.post("/login",(req,res)=>{
     let name = req.body.username;
-    let pass = req.body.password;
+    let pass = md5(req.body.password); //4.Hash the password to match it with hashed-passowrd in db.
 
 
     User.findOne({username:name},(err,foundUser)=>{
