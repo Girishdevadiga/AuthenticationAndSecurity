@@ -7,8 +7,11 @@ const mongoose = require("mongoose");
 const { log } = require("console");
 const app = express();
 
-//1.Require MD5
-const md5 = require("md5");
+//1.Require bcrypt
+const bcrypt = require("bcrypt");
+
+//2.Salt round
+const SaltRound = 10;
 
 
 app.use(bodyParser.urlencoded({extended:true}));
@@ -42,26 +45,31 @@ app.get("/register",(req,res)=>{
 app.post("/register",(req,res)=>{
 
     let name = req.body.username;
-    let pass = md5(req.body.password); //2.Hash the password using md5
-    
-    const user = new User({
-        username:name,
-        password:pass    //3.Store it in db
+    let pass = req.body.password; 
+
+    //3.hash the password using bcrypt.hash()
+    bcrypt.hash(pass,SaltRound,function(err,hash){  //here hash is the hashed password store it in db
+
+        const user = new User({
+            username:name,
+            password:hash //3.1 stored in db
+        });
+        user.save((err)=>{
+            if(err){r
+                console.log(err);
+            }
+            else
+            {
+                res.render("secrets");
+            }
+        });
     });
-    user.save((err)=>{
-        if(err){
-            console.log(err);
-        }
-        else
-        {
-            res.render("secrets");
-        }
-    });
+
 });
 
 app.post("/login",(req,res)=>{
     let name = req.body.username;
-    let pass = md5(req.body.password); //4.Hash the password to match it with hashed-passowrd in db.
+    let pass = req.body.password; 
 
 
     User.findOne({username:name},(err,foundUser)=>{
@@ -72,14 +80,21 @@ app.post("/login",(req,res)=>{
         }
         else{
             if(foundUser){
-                if(foundUser.password==pass){
-                    console.log("Login Successfull");
-                    res.render("secrets");
-                }
-                else
-                {
-                    res.redirect("/")  
-                }
+
+                //4.compare the password using bcrypt.compare()
+
+                bcrypt.compare(pass,foundUser.password,function(err,result){
+
+                    if(result==true){
+                        console.log("Login Successfull");
+                        res.render("secrets");
+                    }
+                    else
+                    {
+                        res.redirect("/")  
+                    }
+                });
+              
             }
            
         }
