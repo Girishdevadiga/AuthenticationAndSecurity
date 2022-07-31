@@ -1,4 +1,5 @@
 //jshint esversion:6
+require("dotenv").config();//1.require it
 const express = require("express");
 const ejs = require("ejs");
 const bodyParser = require("body-parser");
@@ -7,7 +8,7 @@ const mongoose = require("mongoose");
 const { log } = require("console");
 const app = express();
 
-//1.Require the package
+
 const encrypt = require("mongoose-encryption");
 
 app.use(bodyParser.urlencoded({extended:true}));
@@ -16,15 +17,15 @@ app.set("view engine","ejs");
 
 mongoose.connect("mongodb://localhost:27017/userDB",{useNewUrlParser:true});
 
-//2.add new keyword to schema
+
 const userSchema =new  mongoose.Schema({
 
     username:String,
     password:String
 });
-//3.plugin encryption before creating the model
-const secret = "Thisisoursecret";
-userSchema.plugin(encrypt,{secret:secret,encryptedFields:["password"]}); //Only encrypting password field
+//console.log(process.env.SECRET);
+
+userSchema.plugin(encrypt,{secret:process.env.SECRET,encryptedFields:["password"]}); //Only encrypting password field
 
 const User = new mongoose.model("User",userSchema);
 
@@ -67,7 +68,7 @@ app.post("/login",(req,res)=>{
     let name = req.body.username;
     let pass = req.body.password;
 
-    //it will automatically decrypt the password when find is called.no need to write extra code
+
     User.findOne({username:name},(err,foundUser)=>{
 
         if(err){
